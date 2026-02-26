@@ -23,7 +23,10 @@ class TextChunker:
         for chunk in chunks:
             total_characters += len(chunk.page_content)
 
-        average_length = total_characters // total_chunks if total_chunks > 0 else 0
+        if total_chunks > 0:
+            average_length = total_characters // total_chunks
+        else:
+            average_length = 0
 
         print("\nChunk details:\n")
         print(f"Chunk Size: {self.chunk_size}")

@@ -16,9 +16,7 @@ def main():
     print("First chunk preview:\n")
     print(chunks[0].page_content)
 
-    embedder = Embedder()
-    embeddings = embedder.generate_embeddings(chunks)
-    embedder.print_embedding_details(embeddings)
+
 
 if __name__ == "__main__":
     main()
