@@ -66,4 +66,3 @@ The LLM is restricted by a "System Prompt" to prevent hallucinations.
 cd app
 python main.py
 ```
-```
