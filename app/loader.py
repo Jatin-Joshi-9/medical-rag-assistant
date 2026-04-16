@@ -21,12 +21,17 @@ class PDFLoader:
         for doc in documents:
             content_length = len(doc.page_content)
             total_characters += content_length
-
             if not doc.page_content.strip():
                 empty_pages += 1
 
-        print("pdf details:")
-        print(f"File: {self.file_path}")
-        print(f"Total Pages: {total_pages}")
-        print(f"Total Characters: {total_characters}")
-        print(f"Empty Pages: {empty_pages}")
+        print("PDF details:")
+        print(f"  File: {self.file_path}")
+        print(f"  Total Pages: {total_pages}")
+        print(f"  Total Characters: {total_characters}")
+        print(f"  Empty Pages: {empty_pages}")
+
+        if total_pages > 0 and (total_characters / total_pages) < 100:
+            print(
+                "\n Warning: Very few characters per page detected. "
+                "This PDF may be scanned or image-based. "
+            )
