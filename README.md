@@ -61,7 +61,7 @@ The LLM is restricted by a "System Prompt" to prevent hallucinations.
     - MUST admit if information is missing.
 * **Validation:** If the `GROQ_API_KEY` is missing from the environment, the system raises a specific `EnvironmentError` before attempting to run.
 
-## 🏃 How to Run
+##  How to Run
 ```bash
 cd app
 python main.py
