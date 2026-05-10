@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from typing import List
 import os
@@ -9,7 +9,7 @@ class PDFLoader:
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
     def load(self) -> List[Document]:
-        loader = PyPDFLoader(self.file_path)
+        loader = PyMuPDFLoader(self.file_path)
         pdf_documents = loader.load()
         return pdf_documents
 
