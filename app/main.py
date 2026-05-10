@@ -1,70 +1,42 @@
 import os
-import pickle
-import numpy as np
 from dotenv import load_dotenv
 
 from loader import PDFLoader
 from chunker import TextChunker
-from embedder import Embedder
 from retriever import Retriever
 from generator import Generator
 
 load_dotenv(dotenv_path="../.env")
 
-CACHE_PATH = "../data/embeddings_cache.pkl"
-
-
-def load_or_build_index(file_path: str, cache_path: str):
-    """
-    Load chunks + embeddings from disk if the cache exists,
-    otherwise build them from scratch and save for next time.
-    """
-    if os.path.exists(cache_path):
-        print(f"Loading cached embeddings from {cache_path} ...")
-        with open(cache_path, "rb") as f:
-            chunks, embeddings = pickle.load(f)
-        print(f"Loaded {len(chunks)} chunks from cache.")
-        embedder = Embedder()  # still need the model for query encoding
-        return chunks, embeddings, embedder
-
-    print("No cache found. Building index from PDF ...")
-    pdf_loader = PDFLoader(file_path)
-    documents = pdf_loader.load()
-    pdf_loader.print_statistics(documents)
-
-    chunker = TextChunker()
-    chunks = chunker.split(documents)
-    chunker.print_chunk_statistics(chunks)
-
-    embedder = Embedder()
-    embeddings = embedder.generate_embeddings(chunks)
-    embedder.print_embedding_details(embeddings)
-
-    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-    with open(cache_path, "wb") as f:
-        pickle.dump((chunks, embeddings), f)
-    print(f"\nCache saved to {cache_path}")
-
-    return chunks, embeddings, embedder
+CHROMA_DIR = "../data/chroma_db"
 
 
 def main():
-    # --- Configuration ---
     file_path = "../data/Good-Clinical-Practice-Guideline.pdf"
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    api_key =groq_api_key
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise EnvironmentError(
-            "API Key is not Available"
-        )
+        raise EnvironmentError("GROQ_API_KEY not set in .env")
 
-    # --- Build or load index ---
-    chunks, embeddings, embedder = load_or_build_index(file_path, CACHE_PATH)
+    retriever = Retriever(persist_dir=CHROMA_DIR)
 
-    retriever = Retriever(embedder)
+    # Only index if DB is empty (first run)
+    if not retriever.is_populated():
+        print("ChromaDB empty. Building index from PDF...")
+        loader = PDFLoader(file_path)
+        docs = loader.load()
+        loader.print_statistics(docs)
+
+        chunker = TextChunker()
+        chunks = chunker.split(docs)
+        chunker.print_chunk_statistics(chunks)
+
+        retriever.index_chunks(chunks)
+    else:
+        print(f"ChromaDB loaded ({retriever.collection.count()} vectors).")
+
     generator = Generator(api_key=api_key)
 
-    print("\n Medical RAG System is Live!")
+    print("\nMedical RAG System is Live!")
     print("Type 'exit' or 'quit' to stop.\n")
 
     while True:
@@ -74,16 +46,14 @@ def main():
         if query.lower() in ("exit", "quit"):
             break
 
-        # Retrieve relevant chunks
-        results = retriever.retrieve(query, chunks, embeddings, top_k=3)
+        results = retriever.retrieve(query, top_k=5)
 
-        # Show retrieved sources (optional, helpful for debugging)
         print("\nTop sources retrieved:")
         for i, r in enumerate(results, 1):
             page = r["metadata"].get("page", "?")
-            print(f"  [{i}] Page {page} | score: {r['score']:.3f}")
+            source = r.get("source", "?")
+            print(f"  [{i}] Page {page} | score: {r['score']:.3f} | via {source}")
 
-        # Generate answer
         print("\nThinking...\n")
         answer = generator.get_answer(query, results)
 
