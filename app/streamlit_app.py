@@ -55,7 +55,7 @@ def index_pdf(uploaded_file, retriever: Retriever) -> dict:
         os.unlink(tmp_path)
 
 
-def render_sources(results: list):
+def render_sources(results: list, turn_id: int = 0):
     with st.expander(f"Sources retrieved ({len(results)})", expanded=False):
         for i, r in enumerate(results, 1):
             page   = r["metadata"].get("page", "?")
@@ -75,7 +75,8 @@ def render_sources(results: list):
                     value=r["content"],
                     height=100,
                     disabled=True,
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    key=f"chunk_{turn_id}_{i}"
                 )
             if i < len(results):
                 st.divider()
@@ -111,7 +112,7 @@ def main():
 
                 st.session_state.indexed_file = uploaded_file.name
                 st.session_state.doc_stats    = stats
-                st.session_state.history      = []  # clear chat on new doc
+                st.session_state.history      = []
                 st.rerun()
 
         if st.session_state.get("doc_stats"):
@@ -128,7 +129,7 @@ def main():
                 st.session_state.clear()
                 st.rerun()
 
-    # ── Main area ────────────────────────────────────────────
+    # ── Main area ─────────────────────────────────────────────
     st.title("Medical RAG Assistant")
 
     if not st.session_state.get("indexed_file"):
@@ -139,12 +140,12 @@ def main():
         st.session_state.history = []
 
     # Render previous turns
-    for turn in st.session_state.history:
+    for idx, turn in enumerate(st.session_state.history):
         with st.chat_message("user"):
             st.markdown(turn["query"])
         with st.chat_message("assistant"):
             st.markdown(turn["answer"])
-            render_sources(turn["results"])
+            render_sources(turn["results"], turn_id=idx)
 
     # New query
     query = st.chat_input("Ask a question about the uploaded document...")
@@ -161,7 +162,7 @@ def main():
                 answer = generator.get_answer(query, results)
 
             st.markdown(answer)
-            render_sources(results)
+            render_sources(results, turn_id=len(st.session_state.history))
 
         st.session_state.history.append({
             "query": query,
