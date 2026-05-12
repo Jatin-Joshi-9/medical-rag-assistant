@@ -87,13 +87,13 @@ def main():
     # ── Sidebar ──────────────────────────────────────────────
     with st.sidebar:
         st.title("Medical RAG Assistant")
-        st.caption("Upload a medical guidelines PDF to begin.")
+        st.caption("Upload a PDF Document to begin.")
         st.divider()
 
         uploaded_file = st.file_uploader(
             "Upload PDF",
             type="pdf",
-            help="Upload any medical guidelines PDF. Previous document is replaced on new upload."
+            help="Upload any medical document PDF. Previous document is replaced on new upload."
         )
 
         if uploaded_file:
